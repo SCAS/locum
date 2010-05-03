@@ -2,7 +2,7 @@
 
 ; Basic setup
 [locum_config]
-dsn_file				          = "/usr/local/etc/locum.php"
+dsn_file				          = "/usr/local/etc/scas_dsn.php"
 log_file		        	  	= "/usr/local/var/log/locum.log"
 run_quiet		          		= FALSE
 
