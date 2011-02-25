@@ -599,8 +599,8 @@ class locum_server extends locum {
               $num_bibs = count($bib_arr_sliced);
               foreach ($bib_arr_sliced as $stdnum => $init_bib_date) {
                 if (preg_match('/ /', $stdnum)) {
-                $stdnum_arr = explode(' ', $stdnum);
-                $stdnum = $stdnum_arr[0];
+                  $stdnum_arr = explode(' ', $stdnum);
+                  $stdnum = $stdnum_arr[0];
                 } else {
                   $stdnum = $stdnum;
                 }

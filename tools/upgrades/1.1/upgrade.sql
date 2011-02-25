@@ -3,7 +3,7 @@ USE scas;
 DROP TABLE IF EXISTS `locum_availability`;
 CREATE TABLE IF NOT EXISTS `locum_availability` (
   `bnum` int(12) unsigned NOT NULL,
-  `available` text,
+  `available` mediumblob,
   `timestamp` timestamp NOT NULL default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
   PRIMARY KEY  (`bnum`),
   KEY `timestamp` (`timestamp`)
