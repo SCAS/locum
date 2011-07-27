@@ -13,6 +13,7 @@ class locum {
     $this->dsn = $dsn;
     $locum_class_name = 'locum_polaris_40';
     $connector_config = 'config/locum_polaris_40.ini';
+    $this->locum_config = parse_ini_file('config/locum.ini', true);
     
     ini_set('memory_limit','128M');
     
