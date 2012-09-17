@@ -62,7 +62,7 @@ class locum_client extends locum {
     
     if(!$term) {
       // Searches for everything (usually for browsing purposes--Hot/New Items, etc..)
-      $cl->SetMatchMode(SPH_MATCH_ANY); 
+      $cl->SetMatchMode(SPH_MATCH_FULLSCAN); 
     } else {
       
       // Is it a boolean search?
