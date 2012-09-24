@@ -78,6 +78,7 @@ class locum {
     $logfile = $this->locum_config['locum_config']['log_file'];
     $quiet = $this->locum_config['locum_config']['run_quiet'];
 
+    $indicator = '';
     for ($i = 0; $i < $severity; $i++) { $indicator .= '*'; }
     $indicator = '[' . str_pad($indicator, 5) . ']';
     file_put_contents($logfile, $indicator . ' ' . $msg . "\n", FILE_APPEND);

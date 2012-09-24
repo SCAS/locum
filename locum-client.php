@@ -389,8 +389,6 @@ class locum_client extends locum {
       foreach ($init_bib_arr as $init_bib) {
         // Get availability
         $init_bib['availability'] = $this->get_item_status($init_bib['bnum']);
-        // Clean up the Stdnum
-        $init_bib['stdnum'] = preg_replace('/[^\d]/','', $init_bib['stdnum']);
         $bib_reference_arr[(string) $init_bib['bnum']] = $init_bib;
       }
 
@@ -629,7 +627,6 @@ class locum_client extends locum {
     $res = $db->query($sql);
     $item_arr = $res->fetchAll(MDB2_FETCHMODE_ASSOC);
     $db->disconnect();
-    $item_arr[0]['stdnum'] = preg_replace('/[^\d]/','', $item_arr[0]['stdnum']);
     return $item_arr[0];
   }
   
@@ -654,7 +651,7 @@ class locum_client extends locum {
       $item_arr = $res->fetchAll(MDB2_FETCHMODE_ASSOC);
       $db->disconnect();
       foreach ($item_arr as $item) {
-        $item['stdnum'] = preg_replace('/[^\d]/','', $item['stdnum']);
+        $item['author'] = $this->author_format($item['author']);
         $bib[(string) $item['bnum']] = $item;
       }
     }
@@ -1003,6 +1000,22 @@ class locum_client extends locum {
     $db->disconnect();
     return $link_result;
   }
-  
+
+  private function author_format($author)
+  {
+    if ($author) {
+      $author_arr = explode(',', $author);
+      $new_author_str = trim($author_arr[1]) . ' ' . trim($author_arr[0]);
+    }
+    if ($new_author_str) {
+      $new_author_str = ereg_replace("[^A-Za-z '.-]", '', $new_author_str);
+      $new_author_str = preg_replace('/ - /', ' ', $new_author_str);
+      $new_author_str = ereg_replace("[^A-Za-z0-9 ]", "", $new_author_str);
+    } else {
+      $new_author_str = '';
+    }
+    
+    return $new_author_str;
+  }
 
 }

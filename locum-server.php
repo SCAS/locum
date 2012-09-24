@@ -107,6 +107,10 @@ class locum_server extends locum {
             if (in_array($bkey, $valid_vals)) { $bib_values[$bkey] = $bval; }
           }
           $bib_values['subjects_ser'] = serialize($subj);
+          $bib_values['stdnum'] = substr(ereg_replace("[^A-Za-z0-9]", "", $bib_values['stdnum']), 0, 13);
+          $bib_values['title'] = ucwords($bib_values['title']);
+          $bib_values['author'] = ucwords($bib_values['author']);
+
           $types = array('date', 'date', 'date', 'integer', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'integer', 'text', 'text', 'integer', 'text', 'text', 'text', 'integer', 'text', 'text');
           $sql_prep = $db->prepare('INSERT INTO locum_bib_items VALUES (:bnum, :author, :addl_author, :title, :title_medium, :edition, :series, :callnum, :pub_info, :pub_year, :stdnum, :upc, :lccn, :descr, :notes, :subjects_ser, :lang, :loc_code, :mat_code, :cover_img, :download_link, NOW(), :bib_created, :bib_lastupdate, :bib_prevupdate, :bib_revs, \'1\')');
           
@@ -143,20 +147,21 @@ class locum_server extends locum {
       eval('$hook = new ' . __CLASS__ . '_hook;');
       return $hook->{__FUNCTION__}($bib_arr);
     }
-    
+   
     $db = MDB2::connect($this->dsn);
     $updated = 0;
     $retired = 0;
     $skipped = 0;
 
     foreach ($bib_arr as $bnum => $init_bib_date) {
-      if(!$firstbib) {
+      if(!isset($firstbib)) {
         $firstbib = $bnum;
       }
       $lastbib = $bnum;
 
-      $bib = $this->locum_cntl->scrape_bib($bnum, $this->locum_config['api_config']['skip_covers']);
-      $utf = "SET NAMES 'utf8' COLLATE 'utf8_unicode_ci'";
+      $skip_covers = isset($this->locum_config['api_config']['skip_covers']) ? $this->locum_config['api_config']['skip_covers'] : NULL;
+      $bib = $this->locum_cntl->scrape_bib($bnum, $skip_covers);
+      $utf = "SET NAMES 'utf8' COLLATE 'utf8_general_ci'";
       $utfprep = $db->query($utf);
 
       if ($bib == FALSE) {
@@ -171,7 +176,8 @@ class locum_server extends locum {
       } else if ($bib == 'skip') {
         // Do nothing.  This might happen if the ILS server is down.
         $skipped++;
-      } else if ($bib['bnum'] && $bib['bib_lastupdate'] != $init_bib_date) {
+      } else if (isset($bib['bnum']) && $bib['bib_lastupdate'] != $init_bib_date) {
+
         $subj = $bib['subjects'];
         $valid_vals = array('bib_created', 'bib_lastupdate', 'bib_prevupdate', 'bib_revs', 'lang', 'loc_code', 'mat_code', 'author', 'addl_author', 'title', 'title_medium', 'edition', 'series', 'callnum', 'pub_info', 'pub_year', 'stdnum', 'upc', 'lccn', 'descr', 'notes', 'bnum', 'download_link');
         foreach ($bib as $bkey => $bval) {
@@ -179,6 +185,9 @@ class locum_server extends locum {
         }
         
         $bib_values['subjects_ser'] = serialize($subj);
+        $bib_values['stdnum'] = substr(ereg_replace("[^A-Za-z0-9]", "", $bib_values['stdnum']), 0, 13);
+        $bib_values['title'] = ucwords($bib_values['title']);
+        $bib_values['author'] = ucwords($bib_values['author']);
       
         $types = array('date', 'date', 'date', 'integer', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'integer', 'text', 'text', 'integer', 'text', 'text', 'text', 'text');
     
@@ -393,6 +402,7 @@ class locum_server extends locum {
       return $hook->{__FUNCTION__}($quiet);
     }
     
+    $start = 1;
     $limit = 1000;
     $offset = 0;
     
