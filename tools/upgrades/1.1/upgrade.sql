@@ -50,3 +50,5 @@ ALTER TABLE `insurge_index` CHANGE `bnum` `bnum` INT( 12 ) NOT NULL;
 ALTER TABLE `locum_bib_items` CHANGE `bnum` `bnum` INT( 12 ) NOT NULL;
 ALTER TABLE `locum_bib_items_subject` CHANGE `bnum` `bnum` INT( 12 ) NOT NULL;
 ALTER TABLE `locum_facet_heap` CHANGE `bnum` `bnum` INT( 12 ) NOT NULL;
+
+ALTER TABLE  `locum_bib_items` CHANGE  `upc`  `upc` VARCHAR( 20 ) NULL DEFAULT NULL
