@@ -86,9 +86,10 @@ class locum_server extends locum {
     
     $db =& MDB2::connect($this->dsn);
 
+    $skip_covers = isset($this->locum_config['api_config']['skip_covers']) ? $this->locum_config['api_config']['skip_covers'] : NULL;
     $process_report['skipped'] = 0;
     $process_report['imported'] = 0;
-    $utf = "SET NAMES 'utf8' COLLATE 'utf8_unicode_ci'";
+    $utf = "SET NAMES 'utf8' COLLATE 'utf8_general_ci'";
     $utfprep = $db->query($utf);
 
     for ($i = $start; $i <= $end; $i++) {
@@ -96,8 +97,7 @@ class locum_server extends locum {
       $init_result = $db->query($sql);
       $init_bib_arr = $init_result->fetchAll(MDB2_FETCHMODE_ASSOC);
       if(empty($init_bib_arr)) {
-        $bib = $this->locum_cntl->scrape_bib($i, $this->locum_config['api_config']['skip_covers']);
-
+        $bib = $this->locum_cntl->scrape_bib($i, $skip_covers);
         if ($bib == FALSE || $bib == 'skip' || $bib['suppress'] == 1) {
           $process_report['skipped']++;
         } else {
@@ -111,10 +111,10 @@ class locum_server extends locum {
           $bib_values['title'] = ucwords($bib_values['title']);
           $bib_values['author'] = ucwords($bib_values['author']);
 
-          $types = array('date', 'date', 'date', 'integer', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'integer', 'text', 'text', 'integer', 'text', 'text', 'text', 'integer', 'text', 'text');
-          $sql_prep = $db->prepare('INSERT INTO locum_bib_items VALUES (:bnum, :author, :addl_author, :title, :title_medium, :edition, :series, :callnum, :pub_info, :pub_year, :stdnum, :upc, :lccn, :descr, :notes, :subjects_ser, :lang, :loc_code, :mat_code, :cover_img, :download_link, NOW(), :bib_created, :bib_lastupdate, :bib_prevupdate, :bib_revs, \'1\')');
-          
-          $affrows = $sql_prep->execute($bib_values);
+          $types = array('integer','text','text','text','text','text','text','text','text','integer','text','text','text','text','text','text','text','text','text','text','date','date','date','integer');
+          $sql_prep = $db->prepare('INSERT INTO locum_bib_items VALUES (:bnum, :author, :addl_author, :title, :title_medium, :edition, :series, :callnum, :pub_info, :pub_year, :stdnum, :upc, :lccn, :descr, :notes, :subjects_ser, :lang, :loc_code, :mat_code, NULL, :download_link, NOW(), :bib_created, :bib_lastupdate, :bib_prevupdate, :bib_revs, \'1\')', $types, MDB2_PREPARE_MANIP);
+
+          $affrows = $sql_prep->execute($bib_values);       
           $this->putlog("Importing bib # $i - $bib[title]");
           $sql_prep->free();
 
