@@ -498,7 +498,6 @@ class locum_server extends locum {
     $init_bib_arr = $init_result->fetchCol();
     foreach ($init_bib_arr as $retired_bib) {
       $sql = "DELETE FROM locum_availability WHERE bnum = " . $retired_bib;
-      print $sql . "; \n";
       $db->query($sql);
       $sql = "DELETE FROM locum_avail_ages WHERE bnum = " . $retired_bib;
       $db->query($sql);
