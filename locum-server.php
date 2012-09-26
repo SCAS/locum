@@ -490,8 +490,23 @@ class locum_server extends locum {
     $limit = 1000;
     $offset = 0;
 
-    $this->putlog("Collecting current data keys ..");
     $db = MDB2::connect($this->dsn);
+
+    $this->putlog("Cleaning out availability for retired records ..");
+    $sql = "SELECT bnum FROM locum_bib_items WHERE active = '0' ORDER BY bnum";
+    $init_result = $db->query($sql);
+    $init_bib_arr = $init_result->fetchCol();
+    foreach ($init_bib_arr as $retired_bib) {
+      $sql = "DELETE FROM locum_availability WHERE bnum = " . $retired_bib;
+      print $sql . "; \n";
+      $db->query($sql);
+      $sql = "DELETE FROM locum_avail_ages WHERE bnum = " . $retired_bib;
+      $db->query($sql);
+      $sql = "DELETE FROM locum_avail_branches WHERE bnum = " . $retired_bib;
+      $db->query($sql);
+    }
+
+    $this->putlog("Collecting current data keys ..");
     $sql = "SELECT bnum, bib_lastupdate FROM locum_bib_items WHERE active = '1' ORDER BY bnum LIMIT $limit";
     $init_result = $db->query($sql);
     $init_bib_arr = $init_result->fetchAll(MDB2_FETCHMODE_ASSOC);
@@ -647,6 +662,24 @@ class locum_server extends locum {
     }
   }
   
+  public function bib_shift($old_bnum, $new_bnum)
+  {
+    // Table -> Field map
+    // Assumes you will rebuild all the indicies and caches after running.
+    $tbl_fld_map = array(
+      'insurge_ratings' => 'bnum',
+      'insurge_reviews' => 'bnum',
+      'insurge_tags' => 'bnum',
+      'locum_holds_placed' => 'bnum'
+    );
+
+    $db = MDB2::connect($this->dsn);
+    foreach ($tbl_fld_map as $table => $field) {
+      $sql = 'UPDATE ' . $table . ' SET ' . $field . ' = ' . $new_bnum . ' WHERE ' . $field . ' = ' . $old_bnum;
+      $db->query($sql);
+      $db->free();
+    }
+  }
   
   /************ External Content Functions ************/
   
