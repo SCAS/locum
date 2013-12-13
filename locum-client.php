@@ -741,7 +741,7 @@ class locum_client extends locum {
       return $hook->{__FUNCTION__}( $cardnum, $pin );
     }
 
-    return $this->locum_cntl->patron_checkout_history( $cardnum, $pin, $action );
+    return $this->locum_cntl->patron_checkout_history( $cardnum, $pin = NULL, $last_record = NULL );
   }
 
   /**
