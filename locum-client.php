@@ -765,15 +765,16 @@ class locum_client extends locum {
    *
    * @param string  $cardnum     Patron barcode/card number
    * @param string  $pin         Patron pin/password
-   * @param string  $action      NULL = do nothing, 'all' = delete all records, 'selected' = Delete records in $vars array
-   * @param array   $vars        array of variables referring to records to delete (optional)
-   * @param array   $last_record Array containing: 'bnum' => Bib num, 'date' => Date of last record harvested
+   * @param int     $hist_id     Unique history ID corresponding to history record ID in ILS (may be a string, but probably not)
+   * @param bool    $all_hist    Tells the function to delete all history for that user if TRUE
    */
-  public function delete_patron_checkout_history( $cardnum, $pin = NULL, $action = NULL, $vars = NULL, $last_record = NULL ) {
+  public function delete_patron_checkout_history( $cardnum, $pin = NULL, $hist_id = NULL, $all_hist = NULL ) {
     if ( is_callable( array( __CLASS__ . '_hook', __FUNCTION__ ) ) ) {
       eval( '$hook = new ' . __CLASS__ . '_hook;' );
       return $hook->{__FUNCTION__}( $cardnum, $pin );
     }
+
+    return $this->locum_cntl->patron_checkout_history_delete( $cardnum, $pin, $hist_id, $all_hist );
 
   }
 
