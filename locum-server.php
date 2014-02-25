@@ -149,28 +149,32 @@ class locum_server extends locum {
     }
    
     $db = MDB2::connect($this->dsn);
+    $utf = "SET NAMES 'utf8' COLLATE 'utf8_general_ci'";
+    $utfprep = $db->query($utf);
     $updated = 0;
     $retired = 0;
     $skipped = 0;
 
-    foreach ($bib_arr as $bnum => $init_bib_date) {
+    for ($bib_i = min(array_keys($bib_arr)); $bib_i <= max(array_keys($bib_arr)); $bib_i++) {
+      $bnum = $bib_i;
       if(!isset($firstbib)) {
         $firstbib = $bnum;
       }
       $lastbib = $bnum;
+      $init_bib_date = $bib_arr[$bnum];
 
       $skip_covers = isset($this->locum_config['api_config']['skip_covers']) ? $this->locum_config['api_config']['skip_covers'] : NULL;
       $bib = $this->locum_cntl->scrape_bib($bnum, $skip_covers);
-      $utf = "SET NAMES 'utf8' COLLATE 'utf8_general_ci'";
-      $utfprep = $db->query($utf);
 
-      if ($bib == FALSE) {
+      if ($bib == FALSE || $bib['suppress'] == 1) {
         // Weed this record
-        // TODO add a verification of weed in here somehow
+        // Suppression of records happens here
         $sql_prep =& $db->prepare('UPDATE locum_bib_items SET active = ? WHERE bnum = ?', array('text', 'integer'));
         $sql_prep->execute(array('0', $bnum));
-        $sql_prep =& $db->prepare('DELETE FROM locum_bib_items_subject WHERE bnum = ?', array('integer'));
-        $sql_prep->execute(array($bnum));
+        if ($bib['suppress'] != 1) {
+          $sql_prep =& $db->prepare('DELETE FROM locum_bib_items_subject WHERE bnum = ?', array('integer'));
+          $sql_prep->execute(array($bnum));
+        }
         $sql_prep->free();
         $retired++;
       } else if ($bib == 'skip') {
@@ -178,6 +182,12 @@ class locum_server extends locum {
         $skipped++;
       } else if (isset($bib['bnum']) && $bib['bib_lastupdate'] != $init_bib_date) {
 
+        // create the stub record if it doesn't exist
+        if (!$bib_arr[$bnum]) {
+          $db->query('INSERT INTO locum_bib_items (bnum) VALUES (' . $bnum . ')');
+        }
+
+        // Process LCSH
         $subj = $bib['subjects'];
         $valid_vals = array('bib_created', 'bib_lastupdate', 'bib_prevupdate', 'bib_revs', 'lang', 'loc_code', 'mat_code', 'author', 'addl_author', 'title', 'title_medium', 'edition', 'series', 'callnum', 'pub_info', 'pub_year', 'stdnum', 'upc', 'lccn', 'descr', 'notes', 'bnum', 'download_link');
         foreach ($bib as $bkey => $bval) {
@@ -215,7 +225,8 @@ class locum_server extends locum {
           "notes = :notes, " .
           "subjects = :subjects_ser, " .
           "download_link = :download_link, " .
-          "modified = NOW()";
+          "modified = NOW(), " .
+          "active = 1";
       
         $sql_prep =& $db->prepare('UPDATE locum_bib_items SET ' . $setlist . ' WHERE bnum = :bnum', $types, MDB2_PREPARE_MANIP);
         $res = $sql_prep->execute($bib_values);
@@ -408,7 +419,7 @@ class locum_server extends locum {
     
     $this->putlog("Collecting current data keys ..");
     $db = MDB2::connect($this->dsn);
-    $sql = "SELECT bnum, bib_lastupdate FROM locum_bib_items WHERE active = '1' ORDER BY bnum LIMIT $limit";
+    $sql = "SELECT bnum, bib_lastupdate FROM locum_bib_items ORDER BY bnum LIMIT $limit";
     $init_result = $db->query($sql);
     $init_bib_arr = $init_result->fetchAll(MDB2_FETCHMODE_ASSOC);
     
@@ -468,7 +479,7 @@ class locum_server extends locum {
       $offset = $offset + $limit;
       $this->putlog("Collecting current data keys starting at $offset");
       $db = MDB2::connect($this->dsn);
-      $sql = "SELECT bnum, bib_lastupdate FROM locum_bib_items WHERE active = '1' ORDER BY bnum LIMIT $limit OFFSET $offset";
+      $sql = "SELECT bnum, bib_lastupdate FROM locum_bib_items ORDER BY bnum LIMIT $limit OFFSET $offset";
       $init_result = $db->query($sql);
       $init_bib_arr = $init_result->fetchAll(MDB2_FETCHMODE_ASSOC);
     }
