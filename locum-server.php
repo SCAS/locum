@@ -166,15 +166,10 @@ class locum_server extends locum {
       $skip_covers = isset($this->locum_config['api_config']['skip_covers']) ? $this->locum_config['api_config']['skip_covers'] : NULL;
       $bib = $this->locum_cntl->scrape_bib($bnum, $skip_covers);
 
-      if ($bib == FALSE || $bib['suppress'] == 1) {
+      if ($bib == FALSE) {
         // Weed this record
-        // Suppression of records happens here
-        $sql_prep =& $db->prepare('UPDATE locum_bib_items SET active = ? WHERE bnum = ?', array('text', 'integer'));
-        $sql_prep->execute(array('0', $bnum));
-        if ($bib['suppress'] != 1) {
-          $sql_prep =& $db->prepare('DELETE FROM locum_bib_items_subject WHERE bnum = ?', array('integer'));
-          $sql_prep->execute(array($bnum));
-        }
+        $sql_prep =& $db->prepare('DELETE FROM locum_bib_items_subject WHERE bnum = ?', array('integer'));
+        $sql_prep->execute(array($bnum));
         $sql_prep->free();
         $retired++;
       } else if ($bib == 'skip') {
@@ -198,8 +193,9 @@ class locum_server extends locum {
         $bib_values['stdnum'] = substr(ereg_replace("[^A-Za-z0-9]", "", $bib_values['stdnum']), 0, 13);
         $bib_values['title'] = ucwords($bib_values['title']);
         $bib_values['author'] = ucwords($bib_values['author']);
+        $bib_values['active'] = (0 - $bib['suppress']) * -1;
       
-        $types = array('date', 'date', 'date', 'integer', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'integer', 'text', 'text', 'integer', 'text', 'text', 'text', 'text');
+        $types = array('date', 'date', 'date', 'integer', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'integer', 'text', 'text', 'integer', 'text', 'text', 'text', 'text', 'integer');
     
         $setlist = 
           "bib_created = :bib_created, " .
@@ -226,8 +222,8 @@ class locum_server extends locum {
           "subjects = :subjects_ser, " .
           "download_link = :download_link, " .
           "modified = NOW(), " .
-          "active = 1";
-      
+          "active = :active";
+
         $sql_prep =& $db->prepare('UPDATE locum_bib_items SET ' . $setlist . ' WHERE bnum = :bnum', $types, MDB2_PREPARE_MANIP);
         $res = $sql_prep->execute($bib_values);
         $sql_prep =& $db->prepare('DELETE FROM locum_bib_items_subject WHERE bnum = ?', array('integer'));
