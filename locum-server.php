@@ -58,7 +58,7 @@ class locum_server extends locum {
       }
       if ($pid) {
         while ($i > 0) {
-          pcntl_waitpid(-1, &$status);
+          pcntl_waitpid(-1, $status);
           $val = pcntl_wexitstatus($status);
           --$i;
           }
@@ -168,8 +168,8 @@ class locum_server extends locum {
 
       if ($bib == FALSE) {
         // Weed this record
-        $sql_prep =& $db->prepare('DELETE FROM locum_bib_items_subject WHERE bnum = ?', array('integer'));
-        $sql_prep->execute(array($bnum));
+        $sql_prep =& $db->prepare('DELETE FROM locum_bib_items_subject WHERE bnum = ' . $bnum);
+        $sql_prep->execute();
         $sql_prep->free();
         $retired++;
       } else if ($bib == 'skip') {
@@ -193,7 +193,7 @@ class locum_server extends locum {
         $bib_values['stdnum'] = substr(ereg_replace("[^A-Za-z0-9]", "", $bib_values['stdnum']), 0, 13);
         $bib_values['title'] = ucwords($bib_values['title']);
         $bib_values['author'] = ucwords($bib_values['author']);
-        $bib_values['active'] = (0 - $bib['suppress']) * -1;
+        $bib_values['active'] = ($bib['suppress'] == 1) ? 0 : 1;
       
         $types = array('date', 'date', 'date', 'integer', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'integer', 'text', 'text', 'integer', 'text', 'text', 'text', 'text', 'integer');
     
@@ -462,7 +462,7 @@ class locum_server extends locum {
         }
         if ($pid) {
           while ($i > 0) {
-            pcntl_waitpid(-1, &$status);
+            pcntl_waitpid(-1, $status);
             $val = pcntl_wexitstatus($status);
             --$i;
           }
