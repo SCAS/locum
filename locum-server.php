@@ -171,16 +171,17 @@ class locum_server extends locum {
         $sql_prep =& $db->prepare('DELETE FROM locum_bib_items_subject WHERE bnum = ' . $bnum);
         $sql_prep->execute();
         $sql_prep->free();
+        $sql_prep =& $db->prepare('DELETE FROM locum_bib_items WHERE bnum = ' . $bnum);
+        $sql_prep->execute();
+        $sql_prep->free();
         $retired++;
       } else if ($bib == 'skip') {
         // Do nothing.  This might happen if the ILS server is down.
         $skipped++;
-      } else if (isset($bib['bnum']) && $bib['bib_lastupdate'] != $init_bib_date) {
+      } else if (isset($bib['bnum'])) {
 
         // create the stub record if it doesn't exist
-        if (!$bib_arr[$bnum]) {
-          $db->query('INSERT INTO locum_bib_items (bnum) VALUES (' . $bnum . ')');
-        }
+        $db->query('INSERT IGNORE INTO locum_bib_items SET bnum = ' . $bnum);
 
         // Process LCSH
         $subj = $bib['subjects'];
@@ -193,9 +194,11 @@ class locum_server extends locum {
         $bib_values['stdnum'] = substr(ereg_replace("[^A-Za-z0-9]", "", $bib_values['stdnum']), 0, 13);
         $bib_values['title'] = ucwords($bib_values['title']);
         $bib_values['author'] = ucwords($bib_values['author']);
-        $bib_values['active'] = ($bib['suppress'] == 1) ? 0 : 1;
-      
-        $types = array('date', 'date', 'date', 'integer', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'integer', 'text', 'text', 'integer', 'text', 'text', 'text', 'text', 'integer');
+        
+        $active_record = ($bib['suppress'] - 1) * -1;
+        $db->query("UPDATE locum_bib_items SET active = '" . $active_record . "' WHERE bnum = " . $bnum);
+
+        $types = array('date', 'date', 'date', 'integer', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'integer', 'text', 'text', 'integer', 'text', 'text', 'text', 'text');
     
         $setlist = 
           "bib_created = :bib_created, " .
@@ -221,8 +224,7 @@ class locum_server extends locum {
           "notes = :notes, " .
           "subjects = :subjects_ser, " .
           "download_link = :download_link, " .
-          "modified = NOW(), " .
-          "active = :active";
+          "modified = NOW()";
 
         $sql_prep =& $db->prepare('UPDATE locum_bib_items SET ' . $setlist . ' WHERE bnum = :bnum', $types, MDB2_PREPARE_MANIP);
         $res = $sql_prep->execute($bib_values);
